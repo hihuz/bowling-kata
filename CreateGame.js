@@ -1,43 +1,44 @@
+const isSpare = frame => frame.length === 2 && frame[0] + frame[1] === 10;
+
+const isStrike = frame => frame.length === 1 && frame[0] === 10;
+
+const getSpareBonus = (frames, i) => (frames.length > i + 1 ? frames[i + 1][0] : 0);
+
+const getStrikeBonus = (frames, i) => {
+  if (frames.length > i + 1 && frames[i + 1].length === 2) {
+    return frames[i + 1][0] + frames[i + 1][1];
+  } else if (frames.length > i + 2 && frames[i + 1].length === 1) {
+    return frames[i + 1][0] + frames[i + 2][0];
+  }
+  return 0;
+};
+
 const CreateGame = () => {
   return {
     score: 0,
     frames: [],
     roll(n) {
       const currentFrame = this.frames[this.frames.length - 1];
-      if (
-        !currentFrame || currentFrame[0] === 10 || currentFrame.length === 2
-      ) {
+      if (!currentFrame || currentFrame[0] === 10 || currentFrame.length === 2) {
         this.frames.push([n]);
       } else {
         currentFrame.push(n);
       }
-
       this.score = this.frames
-        .map((frame, i, arr) => {
+        .map((frame, i, frames) => {
           const frameScore = [...frame];
-          // previous frame is spare
-          if (
-            i > 0 &&
-            arr[i - 1].length === 2 &&
-            arr[i - 1][0] + arr[i - 1][1] === 10
-          ) {
-            frameScore[0] *= 2;
+          if (isSpare(frame)) {
+            frameScore[0] += getSpareBonus(frames, i);
+          } else if (isStrike(frame)) {
+            frameScore[0] += getStrikeBonus(frames, i);
           }
-          // previous frame is strike
-          if (i > 0 && arr[i - 1][0] === 10) {
-            frameScore[0] *= 2;
-            if (frameScore.length === 2) {
-              frameScore[1] *= 2;
-            }
-          }
-          // before-previous frame is strike
-          if (i > 1 && arr[i - 2][0] === 10) {
-            frameScore[0] *= 2;
-          }
-          return frameScore;
+          return i < 10 ? frameScore : [0];
         })
-        .reduce((acc, cur) => [...acc, ...cur], [])
-        .reduce((acc, cur) => acc + cur, 0);
+        .reduce((flatFrames, curFrame) => [...flatFrames, ...curFrame], [])
+        .reduce((totalScore, rollScore) => totalScore + rollScore, 0);
+    },
+    getScore() {
+      return this.score;
     }
   };
 };
